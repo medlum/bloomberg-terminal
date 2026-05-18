@@ -1,4 +1,4 @@
-# ui_app_bloomberg.py
+# app.py
 
 import os
 import dash

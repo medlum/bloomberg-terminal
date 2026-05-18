@@ -9,3 +9,4 @@ newspaper3k
 yahooquery
 gunicorn
 python-dotenv
+lxml_html_clean>=0.4.0
