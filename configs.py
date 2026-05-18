@@ -9,7 +9,7 @@ class Config:
     TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")
     BRAVE_API_KEY = os.getenv("BRAVE_API_KEY")
     DEFAULT_MODEL = "openai/gpt-oss-20b"
-    TF_REPORTS_PATH = Path("trendforce_reports/may_rpt.json")
+    #TF_REPORTS_PATH = Path("trendforce_reports/may_rpt.json")
     
     @classmethod
     def validate(cls):

@@ -27,6 +27,10 @@ BB_GREEN = "#00FF00"      # Dynamic positive signals
 BB_RED = "#FF3333"        # Dynamic negative signals
 
 
+# --- APP SETUP ---
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.DARKLY, dbc.icons.BOOTSTRAP])
+# 2. EXPOSE THE SERVER (Crucial for Render/Gunicorn)
+server = app.server
 
 # --- UI HELPERS ---
 
@@ -62,11 +66,6 @@ def create_news_card(item):
         ])
     ], style={"backgroundColor": BB_CONTAINER, "borderLeft": f"4px solid {BB_AMBER}", "borderTop": "0", "borderRight": "0", "borderBottom": "0", "marginBottom": "15px", "borderRadius": "0px", "height":"100%"})
 
-
-# --- APP SETUP ---
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.DARKLY, dbc.icons.BOOTSTRAP])
-# 2. EXPOSE THE SERVER (Crucial for Render/Gunicorn)
-server = app.server
 
 # --- LAYOUT ---
 
