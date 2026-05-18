@@ -8,3 +8,4 @@ dash_ag_grid
 newspaper3k
 yahooquery
 gunicorn
+python-dotenv
