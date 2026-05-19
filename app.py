@@ -351,7 +351,7 @@ app.layout = dbc.Container([
                                     )
                                 ], className="d-flex justify-content-between align-items-center")
                             ], style={"backgroundColor": "#222222"}),
-                            dbc.CardBody(dcc.Graph(id="macro-chart", style={"height": "400px"}))
+                            dbc.CardBody(dcc.Graph(id="macro-chart", style={"height": "500px"}))
                         ], style={"backgroundColor": BB_CONTAINER, "border": f"1px solid {BB_MUTED}", "borderRadius": "0px", "marginTop": "20px"})
                     ])
                 ], active_label_style={"color": BB_AMBER, "backgroundColor": BB_CONTAINER, "border": f"1px solid {BB_MUTED}"}, label_style={"color": BB_TEXT}),
