@@ -9,13 +9,11 @@ import dash_bootstrap_components as dbc
 from plotly.subplots import make_subplots
 from dash import dcc, html, Input, Output, State, no_update
 from together import Together
-from yahooquery import Ticker  # Added for Macro Indicators
 import dash_ag_grid as dag
 
 # Importing the connector containing your refactored method
 from yf_connector import YFinanceConnector 
 from financial_analyst import FinancialStatementAnalyzer
-from macro_connector import fetch_macro_data
 from configs import Config
 import re
 
@@ -29,55 +27,13 @@ BB_GREEN = "#00FF00"      # Dynamic positive signals
 BB_RED = "#FF3333"        # Dynamic negative signals
 
 
-
 # --- APP SETUP ---
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.DARKLY, dbc.icons.BOOTSTRAP])
 # 2. EXPOSE THE SERVER (Crucial for Render/Gunicorn)
 server = app.server
 
-# --- MACRO INDICATORS CONFIG & FUNCTIONS ---
-MACRO_TICKERS = {
-    "US Dollar Index": "DX-Y.NYB",
-    "10Y Treasury Yield": "^TNX",
-    "Gold": "GC=F",
-    "Crude Oil": "CL=F"
-}
-
-def create_macro_figure(df):
-    fig = make_subplots(
-        rows=2, cols=2,
-        subplot_titles=list(MACRO_TICKERS.keys()),
-        vertical_spacing=0.12,
-        horizontal_spacing=0.08
-    )
-    positions = {
-        "US Dollar Index": (1, 1),
-        "10Y Treasury Yield": (1, 2),
-        "Gold": (2, 1),
-        "Crude Oil": (2, 2)
-    }
-    for asset_name in MACRO_TICKERS.keys():
-        asset_df = df[df["asset"] == asset_name]
-        row, col = positions[asset_name]
-        fig.add_trace(
-            go.Scatter(x=asset_df["date"], y=asset_df["close"], mode="lines", name=asset_name),
-            row=row, col=col
-        )
-    fig.update_layout(
-        height=800,
-        template="plotly_dark",
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        #title="Macro Indicators Dashboard",
-        title_font_color=BB_AMBER,
-        showlegend=False,
-        margin=dict(l=40, r=40, t=50, b=10)
-    )
-    fig.update_yaxes(title_text="Price", gridcolor="#222222")
-    fig.update_xaxes(gridcolor="#222222")
-    return fig
-
 # --- UI HELPERS ---
+
 def create_metric_card(title, id_name):
     return dbc.Card(
         dbc.CardBody([
@@ -112,6 +68,7 @@ def create_news_card(item):
 
 
 # --- LAYOUT ---
+
 app.layout = dbc.Container([
     dcc.Store(id="stock-store"),
 
@@ -162,7 +119,7 @@ app.layout = dbc.Container([
             ], style={"backgroundColor": BB_CONTAINER, "border": f"1px solid {BB_MUTED}", "borderRadius": "0px"}, className="mt-3"),
         ], width=3),
 
-        # ---------------- MAIN FIVE-TAB DESK ----------------
+        # ---------------- MAIN THREE-TAB DESK ----------------
         dbc.Col([
             dbc.Tabs([
                 
@@ -324,37 +281,7 @@ app.layout = dbc.Container([
                         ], style={"backgroundColor": BB_CONTAINER, "border": f"1px solid {BB_MUTED}", "borderRadius": "0px", "marginTop": "20px"})
                     ])
                 ], active_label_style={"color": BB_AMBER, "backgroundColor": BB_CONTAINER, "border": f"1px solid {BB_MUTED}"}, label_style={"color": BB_TEXT}),
-
-                # TAB 5: MACRO INDICATORS (NEW)
-                dbc.Tab(label="5 <GO> MACRO INDICATORS", children=[
-                    html.Div([
-                        dbc.Card([
-                            dbc.CardHeader([
-                                html.Div([
-                                    html.Span("MACRO ECONOMIC & COMMODITY TRACKER", style={"fontWeight": "bold", "color": BB_AMBER}),
-                                    dcc.Dropdown(
-                                        id="macro-period-dropdown",  # Renamed to avoid collision with Tab 1 dropdown
-                                        options=[
-                                            {"label": "1 Year", "value": "1y"},
-                                            {"label": "3 Years", "value": "3y"},
-                                            {"label": "5 Years", "value": "5y"},
-                                        ],
-                                        value="1y",
-                                        clearable=False,
-                                        style={
-                                            "width": "150px", 
-                                            "backgroundColor": "#000000", 
-                                            "color": BB_AMBER, 
-                                            "border": f"1px solid {BB_MUTED}",
-                                            "fontFamily": "Courier New"
-                                        }
-                                    )
-                                ], className="d-flex justify-content-between align-items-center")
-                            ], style={"backgroundColor": "#222222"}),
-                            dbc.CardBody(dcc.Graph(id="macro-chart", style={"height": "500px"}))
-                        ], style={"backgroundColor": BB_CONTAINER, "border": f"1px solid {BB_MUTED}", "borderRadius": "0px", "marginTop": "20px"})
-                    ])
-                ], active_label_style={"color": BB_AMBER, "backgroundColor": BB_CONTAINER, "border": f"1px solid {BB_MUTED}"}, label_style={"color": BB_TEXT}),
+                
 
             ], id="terminal-tabs", style={"borderBottom": f"1px solid {BB_MUTED}"})
         ], width=9)
@@ -473,10 +400,12 @@ def update_news(stats):
     [State("ticker-input", "value")]
 )
 def update_financial_statements(n_clicks, statement_type, ticker):
+    # Default fallback message
     fallback_info = html.Div("ENTER TICKER & HIT <GO> TO INITIATE FINANCIAL ANALYSIS.", 
                              style={"color": BB_MUTED, "fontFamily": "Courier New", "textAlign": "center", "padding": "20px"})
     
     if not ticker:
+        # Return explicit tuple of 4 values matching the callback outputs
         return [], [], fallback_info, fallback_info
     
     try:
@@ -486,9 +415,11 @@ def update_financial_statements(n_clicks, statement_type, ticker):
         if df is None or isinstance(df, str) or (isinstance(df, pd.DataFrame) and df.empty):
             return [{"Metrics": "ERROR: No data returned."}], [{"field": "Metrics"}], fallback_info, fallback_info
             
+        # Clean & Analyze
         analyzer = FinancialStatementAnalyzer(ticker, yf_conn)
         cleaned_df = FinancialStatementAnalyzer.clean_statement(df)
         
+        # Grid Setup        
         row_data = df.to_dict("records")
         column_defs = []
         for col in df.columns:
@@ -498,6 +429,7 @@ def update_financial_statements(n_clicks, statement_type, ticker):
                 col_def.update({"pinned": "left", "filter": True})
             column_defs.append(col_def)
             
+        # Growth & Summary Logic
         metrics_map = {
             "income_statement": (analyzer.DEFAULT_INCOME_METRICS, analyzer.generate_income_summary),
             "balance_sheet": (analyzer.DEFAULT_BALANCE_METRICS, analyzer.generate_balance_summary),
@@ -508,6 +440,7 @@ def update_financial_statements(n_clicks, statement_type, ticker):
         growth_df = analyzer.calculate_growth(cleaned_df, metrics)
         summary_list = summary_fn(cleaned_df)
         
+        # Render Growth Table
         growth_rows = [html.Tr([
             html.Th("METRIC", style={"color": BB_MUTED, "fontSize": "0.7rem", "padding": "8px"}),
             html.Th("LATEST VALUE", style={"color": BB_MUTED, "fontSize": "0.7rem", "padding": "8px", "textAlign": "right"}),
@@ -526,6 +459,8 @@ def update_financial_statements(n_clicks, statement_type, ticker):
             ], style={"borderBottom": f"1px solid {BB_MUTED}"}))
             
         growth_ui = dbc.Table(growth_rows, className="table-sm", style={"backgroundColor": "transparent", "fontSize": "0.8rem"})
+        
+        # Render Summary
         summary_ui = html.Ul([html.Li(bullet, style={"color": BB_TEXT, "fontSize": "0.85rem", "marginBottom": "6px", "listStyleType": "square", "marginLeft": "15px"}) for bullet in summary_list], 
                              style={"paddingLeft": "15px", "marginBottom": "0"})
         
@@ -534,17 +469,5 @@ def update_financial_statements(n_clicks, statement_type, ticker):
     except Exception as e:
         return [{"Metrics": f"DESK ERROR: {str(e).upper()}"}], [{"field": "Metrics"}], html.Div(str(e).upper(), style={"color": BB_RED}), html.Div(str(e).upper(), style={"color": BB_RED})
 
-
-# --- CALLBACK 4: MACRO INDICATORS DASHBOARD ---
-@app.callback(
-    Output("macro-chart", "figure"),
-    Input("macro-period-dropdown", "value")
-)
-def update_macro_chart(selected_period):
-    df = fetch_macro_data(tickers_dict=MACRO_TICKERS, period=selected_period, interval="1d")
-    fig = create_macro_figure(df)
-    return fig
-
-
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=False)
