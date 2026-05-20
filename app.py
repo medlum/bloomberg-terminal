@@ -234,7 +234,12 @@ app.layout = dbc.Container([
                 dbc.Tab(label="2 <GO> WIRE NEWS", children=[
                     html.Div([
                         dbc.Card([
-                            dbc.CardHeader("REALTIME NEWS FEED BROADCAST", style={"fontWeight": "bold", "color": BB_AMBER, "backgroundColor": "#222222"}),
+                            dbc.CardHeader([
+                                html.Div([
+                                    html.Span("REALTIME NEWS FEED BROADCAST", style={"fontWeight": "bold", "color": BB_AMBER}),
+                                    dbc.Switch(id="news-toggle", label="ENABLE FEED", value=False, className="mb-0", style={"color": BB_TEXT})
+                                ], className="d-flex justify-content-between align-items-center")
+                            ], style={"backgroundColor": "#222222"}),
                             dbc.CardBody([
                                 dcc.Loading(id="loading-news", type="dot", children=html.Div(id="news-feed", style={"maxHeight": "600px", "overflowY": "auto"}))
                             ])
@@ -243,7 +248,7 @@ app.layout = dbc.Container([
                 ], active_label_style={"color": BB_AMBER, "backgroundColor": BB_CONTAINER, "border": f"1px solid {BB_MUTED}"}, label_style={"color": BB_TEXT}),
                 
                 # TAB 3: TECHNICAL DESK ANALYSIS
-                dbc.Tab(label="3 <GO> TECH SUMMARY", children=[
+                dbc.Tab(label="3 <GO> TECHNICALS", children=[
                     html.Div([
                         dbc.Card([
                             dbc.CardHeader("QUANTITATIVE TECHNICAL MATRIX INDICATORS", style={"fontWeight": "bold", "color": BB_AMBER, "backgroundColor": "#222222"}),
@@ -441,11 +446,21 @@ def update_stock_dashboard(n_clicks, selected_period, ticker):
     )
 
 
+# REPLACE THIS ENTIRE CALLBACK:
 # --- CALLBACK 2: WIRE NEWS DECK ---
-@app.callback(Output("news-feed", "children"), Input("stock-store", "data"))
-def update_news(stats):
+@app.callback(
+    Output("news-feed", "children"), 
+    Input("stock-store", "data"), 
+    Input("news-toggle", "value")
+)
+def update_news(stats, news_enabled):
     if not stats:
         return html.Div("TERMINAL IDLE. ENTER TICKER TO LISTEN FOR WIRE UPDATES.", style={"color": BB_MUTED, "fontFamily": "Courier New", "textAlign": "center", "padding": "20px"})
+    
+    # 🛑 GATEKEEPER: Skip API calls if toggle is OFF (default)
+    if not news_enabled:
+        return html.Div("⛔ NEWS FEED DISABLED. TOGGLE ON TO FETCH LIVE WIRES & CONSERVE API CREDITS.", style={"color": BB_MUTED, "fontFamily": "Courier New", "textAlign": "center", "padding": "20px"})
+        
     try:
         from news_connector import BraveNewsAnalyst
         client = Together(api_key=Config.TOGETHER_API_KEY)
@@ -547,4 +562,4 @@ def update_macro_chart(selected_period):
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=False)
