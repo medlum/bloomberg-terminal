@@ -366,6 +366,10 @@ app.layout = dbc.Container([
     ])
 ], fluid=True, style={"backgroundColor": BB_BG, "minHeight": "100vh", "padding": "20px"})
 
+# --- SAFE STRING HELPER (ADD THIS) ---
+def safe_upper(value, default='N/A'):
+    """Safely convert value to uppercase, handling None/missing/empty values"""
+    return (value or default).upper()
 
 # --- CALLBACK 1: METRICS, CANDLESTICKS, RATINGS & PERSISTENT DATA ---
 @app.callback(
@@ -436,7 +440,9 @@ def update_stock_dashboard(n_clicks, selected_period, ticker):
         trend_val, rsi_val, macd_val = "DATA ERROR", "DATA ERROR", "DATA ERROR"
 
     return (
-        stats['long_name'].upper(), stats.get('sector', 'N/A').upper(), stats.get('industry', 'N/A').upper(),
+        safe_upper(stats.get('long_name')),      # ✅ was: stats['long_name'].upper()
+        safe_upper(stats.get('sector')),         # ✅ was: stats.get('sector', 'N/A').upper()
+        safe_upper(stats.get('industry')),       # ✅ was: stats.get('industry', 'N/A').upper()
         fmt_p(stats['current_price']), f"${stats['market_cap']/1e9:.1f}B",
         fmt_num(stats['trailing_pe']), fmt_num(stats['forward_pe']), fmt_num(stats['peg_ratio']), fmt_num(stats['price_to_book']),
         fmt_pct(stats['roe']), fmt_pct(stats['profit_margin']), fmt_pct(stats['revenue_growth']), stats['debt_to_equity'],
@@ -562,4 +568,4 @@ def update_macro_chart(selected_period):
 
 
 if __name__ == "__main__":
-    app.run(debug=False)
+    app.run(debug=True)
