@@ -568,4 +568,4 @@ def update_macro_chart(selected_period):
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=False)
